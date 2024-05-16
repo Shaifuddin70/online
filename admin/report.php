@@ -72,6 +72,7 @@ session_start();
                                 </ul>
                             </div>
                         </li>
+                       
                     </ul>
                 </div>
             </nav>
@@ -119,8 +120,9 @@ session_start();
                     <div class="col-12">
                         <div class="col-lg-12">
                             <div class="card card-outline-primary">
-                                <div class="card-header">
+                                <div class="card-header d-flex" style="justify-content:space-between;align-items:center">
                                     <h4 class="m-b-0 text-white">All Orders</h4>
+                                    <button onclick="salesReport()" class="btn btn-success"> Sales Report</button>
                                 </div>
                                 <!-- Filter form -->
                                 <div class="row">
@@ -155,156 +157,164 @@ session_start();
                                             </div>
                                             <button type="submit" class="btn btn-primary">Filter</button>
                                         </form>
-                                        
+
                                     </div>
                                 </div>
-                                <!-- Orders table -->
-                                <div class="table-responsive m-t-40">
-                                    <table id="myTable" class="table table-bordered table-striped">
-                                        <thead class="thead-dark">
-                                            <tr>
-                                                <th>S/N</th>
-                                                <th>User</th>
-                                                <th>Restaurant</th>
-                                                <th>Title</th>
-                                                <th>Quantity</th>
-                                                <th>Price</th>
-                                                <th>Status</th>
-                                                <th>Reg-Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php
+                                <div id="print" class="print">
 
+                                    <div class="print">
+                                    <h2 id="invisible" class="d-none text-center text-uppercase p-2" >Sales Report</h2>
+                                        <div class="table-responsive m-t-40">
+                                            <table id="myTable" class="table table-bordered table-striped text-center">
+                                                <thead class="thead-dark">
+                                                    <tr>
+                                                        <th>S/N</th>
+                                                        <th>User</th>
+                                                        <th>Restaurant</th>
+                                                        <th>Title</th>
+                                                        <th>Quantity</th>
+                                                        <th>Price</th>
+                                                        <th>Reg-Date</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php
+                                                    // Start date and end date filter
+                                                    $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : null;
+                                                    $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : null;
 
+                                                    // Restaurant filter
+                                                    $restaurant_id = isset($_GET['restaurant']) ? $_GET['restaurant'] : null;
 
-                                            // Start date and end date filter
-                                            $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : null;
-                                            $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : null;
-
-                                            // Restaurant filter
-                                            $restaurant_id = isset($_GET['restaurant']) ? $_GET['restaurant'] : null;
-
-                                            $sql = "SELECT users.username, restaurant.title AS restaurant_title, users_orders.* FROM users_orders 
+                                                    $sql = "SELECT users.username, restaurant.title AS restaurant_title, users_orders.* FROM users_orders 
                                                     INNER JOIN users ON users.u_id = users_orders.u_id
                                                     INNER JOIN restaurant ON restaurant.rs_id = users_orders.rs_id";
 
-                                            // Apply date range filter
-                                            // Apply date range filter
-                                            if ($start_date && $end_date) {
-                                                // Convert the start and end dates to the correct format
-                                                $start_date_formatted = date("Y-m-d", strtotime($start_date));
-                                                $end_date_formatted = date("Y-m-d", strtotime($end_date));
+                                                    // Apply date range filter
+                                                    // Apply date range filter
+                                                    if ($start_date && $end_date) {
+                                                        // Convert the start and end dates to the correct format
+                                                        $start_date_formatted = date("Y-m-d", strtotime($start_date));
+                                                        $end_date_formatted = date("Y-m-d", strtotime($end_date));
 
-                                                // Add the date filter to the SQL query
-                                                $sql .= " WHERE DATE(users_orders.date) BETWEEN '$start_date_formatted' AND '$end_date_formatted'";
-                                            }
+                                                        // Add the date filter to the SQL query
+                                                        $sql .= " WHERE DATE(users_orders.date) BETWEEN '$start_date_formatted' AND '$end_date_formatted'";
+                                                    }
+                                                    // Apply restaurant filter
+                                                    if ($restaurant_id) {
+                                                        if (strpos($sql, 'WHERE') !== false) {
+                                                            $sql .= " AND users_orders.rs_id = '$restaurant_id'";
+                                                        } else {
+                                                            $sql .= " WHERE users_orders.rs_id = '$restaurant_id'";
+                                                        }
+                                                    }
+                                                    $c = 1;
+                                                    $query = mysqli_query($db, $sql);
 
-
-                                            // Apply restaurant filter
-                                            if ($restaurant_id) {
-                                                if (strpos($sql, 'WHERE') !== false) {
-                                                    $sql .= " AND users_orders.rs_id = '$restaurant_id'";
-                                                } else {
-                                                    $sql .= " WHERE users_orders.rs_id = '$restaurant_id'";
-                                                }
-                                            }
-$c=1;
-
-                                            $query = mysqli_query($db, $sql);
-
-                                            if (mysqli_num_rows($query) > 0) {
-                                                while ($row = mysqli_fetch_assoc($query)) {
-                                                    // Display order details
-                                                    echo "<tr>";
-                                                    echo "<td>$c</td>";
-                                                    echo "<td>{$row['username']}</td>";
-                                                    echo "<td>{$row['restaurant_title']}</td>";
-                                                    echo "<td>{$row['title']}</td>";
-                                                    echo "<td>{$row['quantity']}</td>";
-                                                    echo "<td>{$row['price']}</td>";
-                                                    echo "<td>{$row['status']}</td>";
-                                                    echo "<td>{$row['date']}</td>";
-                                                    echo "</tr>";
-                                                    $c++;
-                                                }
-                                            } else {
-                                                echo '<tr><td colspan="7"><center>No Orders</center></td></tr>';
-                                            }
-                                            ?>
-                                        </tbody>
-                                    </table>
-                                    <span id="totalPrice"></span>
-                                    <span id="totalOrders"></span>
+                                                    if (mysqli_num_rows($query) > 0) {
+                                                        while ($row = mysqli_fetch_assoc($query)) {
+                                                            // Display order details
+                                                            echo "<tr>";
+                                                            echo "<td>$c</td>";
+                                                            echo "<td>{$row['username']}</td>";
+                                                            echo "<td>{$row['restaurant_title']}</td>";
+                                                            echo "<td>{$row['title']}</td>";
+                                                            echo "<td>{$row['quantity']}</td>";
+                                                            echo "<td>{$row['price']}</td>";
+                                                            echo "<td>{$row['date']}</td>";
+                                                            echo "</tr>";
+                                                            $c++;
+                                                        }
+                                                    } else {
+                                                        echo '<tr><td colspan="7"><center>No Orders</center></td></tr>';
+                                                    }
+                                                    ?>
+                                                </tbody>
+                                            </table>
+                                            <div class="right m-3 text-right ">
+                                                <div class="total f-s-20 p">
+                                                    <span id="totalPrice"></span>
+                                                </div>
+                                                <div class="total f-s-20 p">
+                                                    <span id="totalOrders"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <footer class="footer"> © 2024 - Online Food Ordering System</footer>
             </div>
-            <footer class="footer"> © 2024 - Online Food Ordering System</footer>
         </div>
-    </div>
+        <script src="js/lib/jquery/jquery.min.js"></script>
+        <script src="js/lib/bootstrap/js/popper.min.js"></script>
+        <script src="js/lib/bootstrap/js/bootstrap.min.js"></script>
+        <script src="js/jquery.slimscroll.js"></script>
+        <script src="js/sidebarmenu.js"></script>
+        <script src="js/lib/sticky-kit-master/dist/sticky-kit.min.js"></script>
+        <script src="js/custom.min.js"></script>
+        <script src="js/lib/datatables/datatables.min.js"></script>
+        <script src="js/lib/datatables/cdn.datatables.net/buttons/1.2.2/js/dataTables.buttons.min.js"></script>
+        <script src="js/lib/datatables/cdn.datatables.net/buttons/1.2.2/js/buttons.flash.min.js"></script>
+        <script src="js/lib/datatables/cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js"></script>
+        <script src="js/lib/datatables/cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/pdfmake.min.js"></script>
+        <script src="js/lib/datatables/cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/vfs_fonts.js"></script>
+        <script src="js/lib/datatables/cdn.datatables.net/buttons/1.2.2/js/buttons.html5.min.js"></script>
+        <script src="js/lib/datatables/cdn.datatables.net/buttons/1.2.2/js/buttons.print.min.js"></script>
+        <script>
 
-    <script src="js/lib/jquery/jquery.min.js"></script>
-    <script src="js/lib/bootstrap/js/popper.min.js"></script>
-    <script src="js/lib/bootstrap/js/bootstrap.min.js"></script>
-    <script src="js/jquery.slimscroll.js"></script>
-    <script src="js/sidebarmenu.js"></script>
-    <script src="js/lib/sticky-kit-master/dist/sticky-kit.min.js"></script>
-    <script src="js/custom.min.js"></script>
-    <script src="js/lib/datatables/datatables.min.js"></script>
-    <script src="js/lib/datatables/cdn.datatables.net/buttons/1.2.2/js/dataTables.buttons.min.js"></script>
-    <script src="js/lib/datatables/cdn.datatables.net/buttons/1.2.2/js/buttons.flash.min.js"></script>
-    <script src="js/lib/datatables/cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js"></script>
-    <script src="js/lib/datatables/cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/pdfmake.min.js"></script>
-    <script src="js/lib/datatables/cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/vfs_fonts.js"></script>
-    <script src="js/lib/datatables/cdn.datatables.net/buttons/1.2.2/js/buttons.html5.min.js"></script>
-    <script src="js/lib/datatables/cdn.datatables.net/buttons/1.2.2/js/buttons.print.min.js"></script>
-    <script>
-    // Function to calculate total price and total number of orders
-    function calculateTotals() {
-        var totalPrice = 0;
-        var totalOrders = 0;
-        // Loop through each row in the table
-        $('#myTable tbody tr').each(function() {
-            // Extract the quantity and price from the current row
-            var quantity = parseInt($(this).find('td:eq(4)').text()); // Corrected index for quantity
-            console.log('Quantity:', quantity); // Log the quantity value to debug
-            var price = parseFloat($(this).find('td:eq(5)').text());
-            // Calculate the total price and total orders
-            totalPrice += price;
-            totalOrders += quantity;
-        });
-        // Display the total price and total orders in the designated spans
-        $('#totalPrice').text('Total Price: ' + totalPrice.toFixed(2));
-        $('#totalOrders').text('Total Orders: ' + totalOrders);
+const salesReport = () => {
+        $("#invisible").removeClass("d-none");
+        var divName = "print";
+        var printContents = document.getElementById(divName).outerHTML;
+        var originalContents = document.body.innerHTML;
+        document.body.innerHTML = printContents;
+        window.print();
+        document.body.innerHTML = originalContents;
+        $("#invisible").addClass("d-none");
     }
+            // Function to calculate total price and total number of orders
+            function calculateTotals() {
+                var totalPrice = 0;
+                var totalOrders = 0;
+                // Loop through each row in the table
+                $('#myTable tbody tr').each(function() {
+                    // Extract the quantity and price from the current row
+                    var quantity = parseInt($(this).find('td:eq(4)').text()); // Corrected index for quantity
+                    console.log('Quantity:', quantity); // Log the quantity value to debug
+                    var price = parseFloat($(this).find('td:eq(5)').text());
+                    // Calculate the total price and total orders
+                    totalPrice += price;
+                    totalOrders += quantity;
+                });
+                // Display the total price and total orders in the designated spans
+                $('#totalPrice').text('Total Revenue Generated: ' + totalPrice.toFixed(2) + ' Tk');
+                $('#totalOrders').text('Total Orders Placed: ' + totalOrders + ' Tk');
+            }
 
-    // Call the function when the page loads and whenever the filter changes
-    $(document).ready(function() {
-        calculateTotals();
+            // Call the function when the page loads and whenever the filter changes
+            $(document).ready(function() {
+                calculateTotals();
 
-        // Trigger the calculation when the filter form is submitted
-        $('form').submit(function() {
-            calculateTotals();
-        });
+                // Trigger the calculation when the filter form is submitted
+                $('form').submit(function() {
+                    calculateTotals();
+                });
 
-        // Trigger the calculation when the start date or end date changes
-        $('#start_date, #end_date').change(function() {
-            calculateTotals();
-        });
+                // Trigger the calculation when the start date or end date changes
+                $('#start_date, #end_date').change(function() {
+                    calculateTotals();
+                });
 
-        // Trigger the calculation when the restaurant filter changes
-        $('#restaurant').change(function() {
-            calculateTotals();
-        });
-    });
-</script>
-
-
-
-
+                // Trigger the calculation when the restaurant filter changes
+                $('#restaurant').change(function() {
+                    calculateTotals();
+                });
+            });
+        </script>
 </body>
 
 </html>
